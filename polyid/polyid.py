@@ -238,11 +238,11 @@ class SingleModel:
         # Check if train/test data exist and create generators
         if self.df_train_scaled is not None:
             self.train_generator = self._create_generator(
-                self.df_train_scaled, batch_size
+                self.df_train_scaled, batch_size=batch_size
             )
         if self.df_validate_scaled is not None:
             self.validate_generator = self._create_generator(
-                self.df_validate_scaled, batch_size
+                self.df_validate_scaled, batch_size=batch_size
             )
 
     def train(
@@ -327,8 +327,9 @@ class SingleModel:
             data=predictions, columns=[f"{col}_pred" for col in self.prediction_columns]
         )
 
+        # append the columns with predictions to the original dataframe
         df_prediction_results.index = df_prediction.index
-        df_prediction_results = df_prediction.join(df_prediction_results, how="outer")
+        df_prediction_results = pd.concat([df_prediction, df_prediction_results], axis=1)
 
         return df_prediction_results
 
@@ -641,13 +642,13 @@ class MultiModel:
         pd.DataFrame
             The df_prediction containing predictions of all models.
         """
-        df_results = pd.DataFrame()
+        df_results = []
         for model in self.models:
             df_result = model.predict(df_prediction)
             df_result["model_id"] = model.model_id
             df_results = df_results.append(df_result)
 
-        return df_results
+        return pd.concat(df_results)
 
     def make_aggregate_predictions(
         self,
